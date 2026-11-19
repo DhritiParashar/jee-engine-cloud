@@ -709,6 +709,9 @@
   };
 
 
+  // ============================================================================
+  // TAB 6: VERIFIED FULL-MOCK PRESENT-LEVEL FORECASTER & WHAT-IF SANDBOX (v28)
+  // ============================================================================
   window._T6_JEE = { p: 76, c: 74, m: 68, shift: "MODERATE", cat: "GEN" };
   window._T6_NEET = { p: 155, c: 160, b: 175, z: 170, diff: "MODERATE", cat: "GEN" };
 

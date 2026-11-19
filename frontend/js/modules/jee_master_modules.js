@@ -19,7 +19,7 @@
       if (t.startsWith("Exam Sections: Quant")) el.innerHTML = `<span class="font-bold">Exam Sections:</span> ${MODES[0].sections}`;
       else if (t.startsWith("Pattern: 54 Qs")) el.innerHTML = `<span class="font-bold">Pattern:</span> 75 Compulsory Qs | 180 Mins | NTA CBT Interface`;
       else if (t.startsWith("Marking: MCQ +1/0")) el.innerHTML = `<span class="font-bold text-rose-600">Marking:</span> Section A MCQ +4/-1 | Section B Numerical +4/-1`;
-      else if (t.includes("Target: 332/340")) el.innerHTML = `Target: 99.5%ile JEE Main &bull; Readiness: 218/300 (~99.2%ile)`;
+      else if (el.children.length === 0 && t.includes("Target: 332/340")) el.innerHTML = `Target: 99.5%ile JEE Main &bull; Readiness: 218/300 (~99.2%ile)`;
     });
 
     document.querySelectorAll("button").forEach(btn => {

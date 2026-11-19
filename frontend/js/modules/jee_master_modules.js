@@ -872,6 +872,27 @@
       ["575 – 614", "AIR 28,000 – 55,000", "State Domicile MBBS / Semi-Govt Quota"]
     ];
 
+    const vLogs = getVerifiedFullMockLogs();
+    const avgScore = vLogs.length ? Math.round(vLogs.reduce((a, b) => a + Number(b.totalScore || 0), 0) / vLogs.length) : null;
+    const bestScore = vLogs.length ? Math.max(...vLogs.map(b => Number(b.totalScore || 0))) : null;
+
+    const syncBannerHtml = !vLogs.length
+      ? `<div id="t6-sync-pill" class="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-2">
+          <span><strong>Present Standing Uncalibrated:</strong> 0 Full ${REQUIRED_QS}-Q Mocks submitted yet. Currently previewing What-If Sandbox.</span>
+          <button type="button" onclick="window.selectUnifiedTab(4);" class="px-3 py-1 rounded-lg bg-amber-600 text-white font-extrabold cursor-pointer">Take Full Mock in Tab 4 &rarr;</button>
+        </div>`
+      : `<div id="t6-sync-pill" class="p-3.5 rounded-xl ${window._T6_MODE === "VERIFIED" ? "bg-emerald-50 border-emerald-300 text-emerald-950" : "bg-indigo-50 border-indigo-300 text-indigo-950"} border text-xs space-y-1">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span>${window._T6_MODE === "VERIFIED"
+              ? `<strong>&#10003; Verified Present Level:</strong> Calibrated from Full Mock <strong>${window._T6_SYNCED_ID}</strong>`
+              : `<strong>What-If Target Sandbox:</strong> Comparing target against Full Mock <strong>${window._T6_SYNCED_ID}</strong>`}</span>
+            ${window._T6_MODE !== "VERIFIED"
+              ? `<button type="button" onclick="window.applySyncedMockToTab6(); window.renderScienceTab6();" class="underline font-extrabold cursor-pointer">Restore Present Level</button>`
+              : `<span class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-extrabold">OFFICIAL STANDING</span>`}
+          </div>
+          <div class="text-[11px] opacity-90">Full Mocks Completed: <strong>${vLogs.length}</strong> &bull; Rolling Average: <strong>${avgScore}/${MAX_MARKS}</strong> &bull; Best Full Mock: <strong>${bestScore}/${MAX_MARKS}</strong></div>
+        </div>`;
+
     target.innerHTML = `
       <div class="max-w-7xl mx-auto pt-4 pb-10 space-y-5">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -880,9 +901,9 @@
               <div>
                 <div class="text-xs font-extrabold uppercase tracking-wider text-${accent}-600">${IS_JEE ? "NTA JEE MAIN & ADVANCED CALIBRATOR" : "NTA NEET UG 720-MARK CALIBRATOR"}</div>
                 <h2 class="text-xl font-extrabold text-slate-900 mt-0.5">${IS_JEE ? "Subject Marks & Shift Simulator" : "PCB Subject Marks & AIR Simulator"}</h2>
-                <div class="text-[11px] font-semibold text-emerald-700 mt-1">Synced with Tab 4 Mock Ledger (Adjust sliders or click Sync Mock)</div>
+                <div class="text-[11px] font-semibold text-emerald-700 mt-1">Synced with Tab 4 Full-Mock Ledger (Adjust sliders or click Sync Mock)</div>
               </div>
-              <button type="button" onclick="if(window.applySyncedMockToTab6()){ window.renderScienceTab6(); } else { alert('No submitted Tab 4 mock found in ledger yet. Submit a Tab 4 mock first.'); }"
+              <button type="button" onclick="if(window.applySyncedMockToTab6()){ window.renderScienceTab6(); } else { alert('No submitted Tab 4 Full Mock found in ledger yet. Submit a complete Tab 4 Full Mock first.'); }"
                 class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm cursor-pointer shrink-0">
                 &#8635; Sync Mock
               </button>
@@ -925,28 +946,7 @@
               </div>
             </div>
 
-            ${(() => {
-              const vLogs = getVerifiedFullMockLogs();
-              const avgScore = vLogs.length ? Math.round(vLogs.reduce((a, b) => a + Number(b.totalScore || 0), 0) / vLogs.length) : null;
-              const bestScore = vLogs.length ? Math.max(...vLogs.map(b => Number(b.totalScore || 0))) : null;
-              if (!vLogs.length) {
-                return `<div id="t6-sync-pill" class="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950 flex flex-wrap items-center justify-between gap-2">
-                  <span><strong>Present Standing Uncalibrated:</strong> 0 Full ${REQUIRED_QS}-Q Mocks submitted yet. Currently previewing What-If Sandbox.</span>
-                  <button type="button" onclick="window.selectUnifiedTab(4);" class="px-3 py-1 rounded-lg bg-amber-600 text-white font-extrabold cursor-pointer">Take Full Mock in Tab 4 &rarr;</button>
-                </div>`;
-              }
-              return `<div id="t6-sync-pill" class="p-3.5 rounded-xl ${window._T6_MODE === "VERIFIED" ? "bg-emerald-50 border-emerald-300 text-emerald-950" : "bg-indigo-50 border-indigo-300 text-indigo-950"} border text-xs space-y-1">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span>${window._T6_MODE === "VERIFIED"
-                    ? `<strong>&#10003; Verified Present Level:</strong> Calibrated from Full Mock <strong>${window._T6_SYNCED_ID}</strong>`
-                    : `<strong>What-If Target Sandbox:</strong> Comparing target against Full Mock <strong>${window._T6_SYNCED_ID}</strong>`}</span>
-                  ${window._T6_MODE !== "VERIFIED"
-                    ? `<button type="button" onclick="window.applySyncedMockToTab6(); window.renderScienceTab6();" class="underline font-extrabold cursor-pointer">Restore Present Level</button>`
-                    : `<span class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-extrabold">OFFICIAL STANDING</span>`}
-                </div>
-                <div class="text-[11px] opacity-90">Full Mocks Completed: <strong>${vLogs.length}</strong> &bull; Rolling Average: <strong>${avgScore}/${MAX_MARKS}</strong> &bull; Best Full Mock: <strong>${bestScore}/${MAX_MARKS}</strong></div>
-              </div>`;
-            })()}
+            ${syncBannerHtml}
             <div id="t6-bottleneck" class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-950 space-y-1"></div>
           </div>
 

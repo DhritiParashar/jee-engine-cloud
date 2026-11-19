@@ -677,7 +677,325 @@
       localStorage.removeItem(LOG_KEY);
       localStorage.removeItem(SYNC_KEY);
       window._T6_SYNCED_ID = null;
-      window._T6_MODE = window._T6_MODE || "VERIFIED";
+      window._T6_MODE = "VERIFIED";
+      window.renderScienceTab4();
+      return;
+    }
+    // Abort unsubmitted run cleanly WITHOUT logging to Full-Mock Ledger or Tab 6
+    window._MOCK_SERIAL_ID = newSerialId();
+    window._CBT_STARTED = false;
+    window._CBT_ANS = {};
+    window._CBT_REVIEW = {};
+    window._CBT_VISITED = { 0: true };
+    window._CBT_SUBMITTED = false;
+    window._CBT_SEC_LEFT = 180 * 60;
+    window._CBT_IDX = 0;
+    window.renderScienceTab4();
+  };
+
+  window.startFreshMockReset = function () {
+    window._MOCK_SERIAL_ID = newSerialId();
+    window._CBT_STARTED = false;
+    window._CBT_ANS = {};
+    window._CBT_REVIEW = {};
+    window._CBT_VISITED = { 0: true };
+    window._CBT_SUBMITTED = false;
+    window._CBT_SEC_LEFT = 180 * 60;
+    window._CBT_IDX = 0;
+    window.renderScienceTab4();
+  };
+
+  window.downloadMockPdfReport = function (sessionId) {
+    const logs = getVerifiedFullMockLogs();
+    const rec = logs.find(x => x.sessionId === sessionId) || logs[0];
+    if (!rec) {
+      alert("Only completed & officially submitted Full-Length Mocks generate an Official Marksheet PDF.");
+      return;
+    }
+    const w = window.open("", "_blank", "width=960,height=820");
+    if (!w) {
+      alert("Please allow popups for this site to download your PDF marksheet.");
+      return;
+    }
+    const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const subjRows = Object.entries(rec.subjects || {}).map(([k, v]) => `
+      <tr>
+        <td style="padding:8px;border:1px solid #cbd5e1;font-weight:700;">${esc(k)}</td>
+        <td style="padding:8px;border:1px solid #cbd5e1;font-weight:800;">${v.s} / ${v.max}</td>
+        <td style="padding:8px;border:1px solid #cbd5e1;color:#047857;">${v.c} (+${v.c * 4})</td>
+        <td style="padding:8px;border:1px solid #cbd5e1;color:#be123c;">${v.w} (-${v.w})</td>
+      </tr>
+    `).join("");
+
+    const auditItems = Array.isArray(rec.itemsAudit) ? rec.itemsAudit : [];
+    const itemsHtml = auditItems.map(it => {
+      const badgeColor = !it.hasAns ? "#475569" : (it.isCorrect ? "#047857" : "#be123c");
+      const badgeBg = !it.hasAns ? "#f1f5f9" : (it.isCorrect ? "#ecfdf5" : "#fff1f2");
+      return `
+        <div style="border:1px solid #cbd5e1;border-radius:8px;padding:12px;margin-bottom:10px;page-break-inside:avoid;">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;margin-bottom:6px;">
+            <strong style="color:#1e293b;">Question ${it.num} of ${auditItems.length} &bull; ${esc(it.subj)} (${esc(it.chapter)})</strong>
+            <span style="padding:2px 8px;border-radius:999px;background:${badgeBg};color:${badgeColor};font-weight:800;">${esc(it.sec)} &bull; ${esc(it.statusLabel)}</span>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:#0f172a;margin-bottom:6px;white-space:pre-line;">${esc(it.prompt)}</div>
+          <div style="font-size:11px;color:#334155;margin-bottom:3px;"><strong>Your Submitted Response:</strong> ${esc(it.userText)}</div>
+          <div style="font-size:11px;color:#047857;margin-bottom:4px;"><strong>Official Answer:</strong> ${esc(it.officialText)}</div>
+          <div style="font-size:11px;color:#1e293b;background:#f8fafc;padding:6px 8px;border-radius:6px;"><strong>Solution:</strong> ${esc(it.explanation)}</div>
+        </div>
+      `;
+    }).join("");
+
+    w.document.write(`<!DOCTYPE html><html><head><title>${esc(rec.sessionId)} - GOALisB Official Diagnostic Marksheet</title></head>
+      <body style="font-family:system-ui,-apple-system,sans-serif;padding:28px;color:#0f172a;max-width:860px;margin:auto;">
+        <div style="border-bottom:3px solid #4338ca;padding-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:11px;font-weight:800;color:#4338ca;text-transform:uppercase;">GOALisB ${IS_JEE ? "JEE" : "NEET UG"} Evaluation Engine</div>
+            <h1 style="margin:4px 0 0;font-size:20px;">${IS_JEE ? "OFFICIAL NTA JEE MAIN 75-Q DIAGNOSTIC MARKSHEET" : "OFFICIAL NTA NEET UG 180-Q DIAGNOSTIC MARKSHEET"}</h1>
+          </div>
+          <div style="text-align:right;font-size:11px;">
+            <div><strong>Assessment Serial ID:</strong> ${esc(rec.sessionId)}</div>
+            <div><strong>Timestamp:</strong> ${esc(rec.timestamp)}</div>
+            <div><strong>Verification:</strong> VERIFIED FULL MOCK (${REQUIRED_QS} Qs)</div>
+          </div>
+        </div>
+
+        <div style="margin:14px 0;padding:12px 14px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:12px;">
+          <div><div style="color:#64748b;font-size:10px;font-weight:700;">CANDIDATE</div><strong>${esc(rec.candidate)}</strong></div>
+          <div><div style="color:#64748b;font-size:10px;font-weight:700;">SCORE AWARDED</div><strong style="font-size:15px;color:#047857;">${rec.totalScore} / ${rec.maxScore}</strong></div>
+          <div><div style="color:#64748b;font-size:10px;font-weight:700;">ACCURACY &amp; SPLIT</div><strong>${esc(rec.accuracy || "0.0")}% (${esc(rec.counts || "")})</strong></div>
+          <div><div style="color:#64748b;font-size:10px;font-weight:700;">TIME &amp; PACE</div><strong>${esc(rec.timeTaken)} (${esc(rec.pacePerQ || "-")})</strong></div>
+        </div>
+
+        <div style="margin-bottom:14px;padding:10px 14px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:8px;font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div><strong>Verified Present Standing:</strong> ${esc(rec.projection)}</div>
+          <div><strong>Behavioral Verdict:</strong> ${esc(rec.verdict || "Standard Pacing")}</div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:18px;">
+          <thead>
+            <tr style="background:#f1f5f9;text-align:left;">
+              <th style="padding:8px;border:1px solid #cbd5e1;">Subject</th>
+              <th style="padding:8px;border:1px solid #cbd5e1;">Net Marks</th>
+              <th style="padding:8px;border:1px solid #cbd5e1;">Correct (+4)</th>
+              <th style="padding:8px;border:1px solid #cbd5e1;">Incorrect (-1)</th>
+            </tr>
+          </thead>
+          <tbody>${subjRows}</tbody>
+        </table>
+
+        <div style="page-break-before:always;border-top:2px solid #4338ca;padding-top:12px;margin-top:16px;">
+          <h2 style="font-size:15px;margin:0 0 10px;color:#1e1b4b;">COMPLETE QUESTION-BY-QUESTION RESPONSE &amp; SOLUTION AUDIT (${auditItems.length} QUESTIONS)</h2>
+          ${itemsHtml}
+        </div>
+        <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); };</script>
+      </body></html>`);
+    w.document.close();
+  };
+
+  window.renderScienceTab4 = async function (el) {
+    const accent = IS_JEE ? "indigo" : "emerald";
+    enforceScienceBrand();
+    const target = getTarget(el);
+    if (!target) return;
+    await hydrateFromNeon();
+    ensureMockTimer();
+
+    window._MOCK_SERIAL_ID = window._MOCK_SERIAL_ID || newSerialId();
+    window._CBT_ANS = window._CBT_ANS || {};
+    window._CBT_REVIEW = window._CBT_REVIEW || {};
+    window._CBT_VISITED = window._CBT_VISITED || { 0: true };
+    if (typeof window._CBT_SEC_LEFT !== "number") window._CBT_SEC_LEFT = 180 * 60;
+
+    const paper = buildFullMockPaper();
+    if (!paper.length) {
+      target.innerHTML = `<div class="p-8 text-center text-sm font-bold text-slate-500">Assembling Full NTA Mock Paper from Neon...</div>`;
+      return;
+    }
+
+    const totalQs = paper.length;
+    const logs = getVerifiedFullMockLogs();
+
+    const resetDeclHtml = window._RESET_MODAL_MODE ? `
+      <div class="bg-rose-50 border-2 border-rose-400 rounded-2xl p-5 space-y-3 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold uppercase text-rose-700">${window._RESET_MODAL_MODE === "CLEAR_LEDGER" ? "PERMANENT FULL-MOCK LEDGER PURGE DECLARATION" : "ABORT SESSION WITHOUT SUBMISSION & RESET DECLARATION"}</span>
+          <button type="button" onclick="window._RESET_MODAL_MODE=null; window.renderScienceTab4();" class="text-xs font-bold text-slate-600 cursor-pointer">Cancel &times;</button>
+        </div>
+        <label class="flex items-start gap-2.5 text-xs font-semibold text-rose-950 cursor-pointer">
+          <input id="cbt-reset-decl-chk" type="checkbox" class="mt-0.5 w-4 h-4 accent-rose-600" />
+          <span>${window._RESET_MODAL_MODE === "CLEAR_LEDGER"
+            ? "I declare that I wish to permanently erase all verified Full-Length Mock records from this browser."
+            : "I declare that I am aborting Serial ID " + window._MOCK_SERIAL_ID + " without submission. Because only complete Full Mocks are calibrated, this aborted attempt will NOT be logged or synced to Tab 6."}</span>
+        </label>
+        <div class="flex gap-2">
+          <button type="button" onclick="window.confirmResetWithDeclaration();" class="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer">Confirm &amp; Reset</button>
+          <button type="button" onclick="window._RESET_MODAL_MODE=null; window.renderScienceTab4();" class="px-4 py-2 rounded-xl bg-white border text-xs font-bold cursor-pointer">Keep Session</button>
+        </div>
+      </div>` : "";
+
+    const ledgerHtml = `
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="text-xs font-extrabold uppercase tracking-wider text-${accent}-600">VERIFIED FULL-MOCK ASSESSMENT LEDGER (COMPLETE ${REQUIRED_QS}-Q SUBMISSIONS ONLY)</div>
+            <h3 class="text-xl font-extrabold text-slate-900 mt-0.5">Serial Mock ID &amp; Verified Present Standing (${logs.length} Full Mocks Logged)</h3>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="window.applySyncedMockToTab6(); window.selectUnifiedTab(6);" class="px-4 py-2 rounded-xl bg-${accent}-50 border border-${accent}-200 text-${accent}-700 text-xs font-extrabold cursor-pointer">View Present Forecast in Tab 6 &rarr;</button>
+            <button type="button" onclick="window.openResetDeclarationModal('CLEAR_LEDGER');" class="px-4 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-extrabold cursor-pointer">Clear Log</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500">
+                <th class="py-2.5 pr-3">SERIAL MOCK ID</th><th class="py-2.5 pr-3">DATE &amp; TIME</th><th class="py-2.5 pr-3">FULL BLUEPRINT</th><th class="py-2.5 pr-3">VERIFIED SCORE</th><th class="py-2.5 pr-3">ACCURACY</th><th class="py-2.5">MARKSHEET &amp; SYNC</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${!logs.length ? `<tr><td colspan="6" class="py-4 text-slate-500">No full-length mocks submitted yet. Short drills and aborted sessions are excluded so Tab 6 reflects only complete ${REQUIRED_QS}-question exam performance.</td></tr>`
+              : logs.map(lg => `<tr class="border-b border-slate-100"><td class="py-3 pr-3 font-mono font-extrabold text-slate-900">${lg.sessionId}</td><td class="py-3 pr-3 text-slate-600">${lg.timestamp}</td><td class="py-3 pr-3 font-semibold">${lg.blueprint}</td><td class="py-3 pr-3 font-black">${lg.totalScore} / ${lg.maxScore}</td><td class="py-3 pr-3 font-bold">${lg.accuracy}% (${lg.counts})</td><td class="py-3 flex gap-1.5"><button type="button" onclick="window.downloadMockPdfReport('${lg.sessionId}');" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white font-bold cursor-pointer">PDF Marksheet</button><button type="button" onclick="window.applySyncedMockToTab6('${lg.sessionId}'); window.selectUnifiedTab(6);" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold cursor-pointer">&#8635; Sync Tab 6</button></td></tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+
+    if (!window._CBT_STARTED && !window._CBT_SUBMITTED) {
+      target.innerHTML = `
+        <div class="max-w-7xl mx-auto pt-4 pb-10 space-y-5">
+          ${resetDeclHtml}
+          <div class="bg-white border-2 border-${accent}-200 rounded-2xl p-6 space-y-5 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2.5">
+                  <span class="px-3 py-1 rounded-full bg-${accent}-100 text-${accent}-800 text-[11px] font-extrabold uppercase">${IS_JEE ? "FULL 300-MARK NTA CBT MOCK • READY TO LAUNCH" : "FULL 720-MARK NTA OMR MOCK • READY TO LAUNCH"}</span>
+                  <span class="text-xs font-mono font-bold text-slate-600">Next Serial ID: <strong>${window._MOCK_SERIAL_ID}</strong></span>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 pt-1">${IS_JEE ? "1. Full JEE Main Standard CBT Mock (75 Qs • 180 Mins)" : "1. Full NEET UG Compulsory OMR Mock (180 Qs • 180 Mins)"}</h2>
+                <p class="text-xs text-slate-600">Only complete ${REQUIRED_QS}-question official submissions are logged in the Ledger and calibrated in Tab 6.</p>
+              </div>
+              <button type="button" onclick="window.launchProctoredMockSession();" class="px-6 py-3.5 rounded-2xl bg-${accent}-600 hover:bg-${accent}-500 text-white text-sm font-extrabold shadow-md cursor-pointer">&#9654; Start Proctored Full Mock (180 Mins)</button>
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="text-[10px] font-extrabold uppercase text-slate-400">QUESTION COUNT</div><div class="text-base font-black text-slate-900 mt-0.5">${totalQs} Compulsory Qs</div></div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="text-[10px] font-extrabold uppercase text-slate-400">PROCTORED CLOCK</div><div class="text-base font-black text-amber-600 mt-0.5">180:00 Minutes (Paused)</div></div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="text-[10px] font-extrabold uppercase text-slate-400">LEDGER POLICY</div><div class="text-base font-black text-indigo-700 mt-0.5">Full Mocks Only</div></div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="text-[10px] font-extrabold uppercase text-slate-400">POSTGRESQL BANK</div><div class="text-base font-black text-emerald-600 mt-0.5">${window._SCI_QUESTIONS.length} Live DB Items</div></div>
+            </div>
+            <label class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5 text-xs text-slate-700 cursor-pointer">
+              <input id="cbt-launch-decl" type="checkbox" checked class="mt-0.5 w-4 h-4 accent-${accent}-600" />
+              <span><strong>Candidate Honor-Code Declaration:</strong> I confirm that I am attempting Serial ID <strong>${window._MOCK_SERIAL_ID}</strong> as a full ${REQUIRED_QS}-question NTA mock under proctored conditions (+4/-1) to calibrate my true present standing in Tab 6.</span>
+            </label>
+          </div>
+          ${ledgerHtml}
+        </div>`;
+      return;
+    }
+
+    const qIdx = Math.min(totalQs - 1, Math.max(0, Number(window._CBT_IDX || 0)));
+    window._CBT_VISITED[qIdx] = true;
+    const q = paper[qIdx];
+    const activeSubj = q.mock_subj;
+    const h = String(Math.floor(window._CBT_SEC_LEFT / 3600)).padStart(2, "0");
+    const m = String(Math.floor((window._CBT_SEC_LEFT % 3600) / 60)).padStart(2, "0");
+    const s = String(window._CBT_SEC_LEFT % 60).padStart(2, "0");
+    const evalRes = window._CBT_SUBMITTED ? evaluateMockPaper(paper) : null;
+    const subjTabs = IS_JEE ? [["PHYSICS", 0, 25], ["CHEMISTRY", 25, 25], ["MATHEMATICS", 50, 25]] : [["PHYSICS", 0, 45], ["CHEMISTRY", 45, 45], ["BOTANY", 90, 45], ["ZOOLOGY", 135, 45]];
+
+    target.innerHTML = `
+      <div class="max-w-7xl mx-auto pt-4 pb-10 space-y-4">
+        ${resetDeclHtml}
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 font-mono text-xs font-extrabold">Serial ID: ${window._MOCK_SERIAL_ID}</span>
+            ${subjTabs.map(([subName, startIdx, cnt]) => `<button type="button" onclick="window._CBT_IDX=${startIdx}; window.renderScienceTab4();" class="px-3.5 py-2 rounded-xl text-xs font-extrabold cursor-pointer ${activeSubj === subName ? `bg-${accent}-600 text-white` : "bg-slate-100 text-slate-700"}">${subName} (${cnt} Qs)</button>`).join("")}
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="px-3.5 py-1.5 rounded-xl bg-slate-900 text-amber-300 font-mono text-sm font-extrabold"><span id="cbt-clock">${h}:${m}:${s}</span></div>
+            ${!window._CBT_SUBMITTED ? `
+              <button type="button" onclick="window.openResetDeclarationModal('EXIT_SESSION');" class="px-3.5 py-2 rounded-xl bg-rose-50 border border-rose-300 text-rose-700 text-xs font-extrabold cursor-pointer">Abort &amp; Reset (Do Not Log)</button>
+              <button type="button" onclick="window.submitMockAndSync();" class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-extrabold cursor-pointer">Submit Full Mock &amp; Sync Tab 6</button>
+            ` : `
+              <button type="button" onclick="window.downloadMockPdfReport('${window._MOCK_SERIAL_ID}');" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-extrabold cursor-pointer">Download PDF Marksheet</button>
+              <button type="button" onclick="window.applySyncedMockToTab6('${window._MOCK_SERIAL_ID}'); window.selectUnifiedTab(6);" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold cursor-pointer">View Present Standing in Tab 6 &rarr;</button>
+              <button type="button" onclick="window.startFreshMockReset();" class="px-3.5 py-2 rounded-xl border text-xs font-extrabold cursor-pointer">New Full Mock</button>
+            `}
+          </div>
+        </div>
+
+        ${window._CBT_SUBMITTED && evalRes ? `
+          <div class="bg-white border-2 border-emerald-500 rounded-2xl p-6 space-y-4 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="text-xs font-extrabold uppercase text-emerald-700">VERIFIED FULL-MOCK SCORECARD &bull; SERIAL ${window._MOCK_SERIAL_ID}</div>
+                <h3 class="text-2xl font-black text-slate-900">Total Score: ${evalRes.totalScore} / ${MAX_MARKS} &bull; ${evalRes.projection}</h3>
+              </div>
+              <div class="text-xs font-bold text-slate-600">Accuracy: <span class="text-indigo-700 font-extrabold">${evalRes.accuracy}%</span> &bull; Pace: <span class="font-extrabold">${evalRes.pacePerQ}</span></div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-${IS_JEE ? 3 : 4} gap-3 text-xs">
+              ${Object.entries(evalRes.subjStats).map(([sn, st]) => `<div class="p-4 rounded-xl bg-slate-50 border border-slate-200"><div class="font-extrabold text-${accent}-700">${sn}</div><div class="text-lg font-black text-slate-900 mt-0.5">${st.s} / ${st.max}</div><div class="text-slate-600 mt-0.5">Correct: ${st.c} &bull; Incorrect: ${st.w}</div></div>`).join("")}
+            </div>
+          </div>` : ""}
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div class="lg:col-span-8 bg-white border border-slate-200 rounded-2xl p-6 space-y-4 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div><span class="text-xs font-extrabold uppercase text-${accent}-600">Question ${qIdx + 1} of ${totalQs} &bull; ${q.mock_subj} &bull; ${q.mock_sec}</span><div class="text-[11px] text-slate-500">Code: ${q.question_code} &bull; Chapter: ${q.chapter_name}</div></div>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-extrabold">+4 Correct / -1 Incorrect</span>
+            </div>
+            <div class="text-sm font-bold text-slate-900 leading-relaxed whitespace-pre-line min-h-[90px]">${q.prompt}</div>
+            ${q.question_type === "NUMERICAL_INT" ? `
+              <div class="space-y-2 pt-2"><label class="block text-xs font-extrabold text-slate-600">Enter Exact Numerical Value (Section B):</label><input id="cbt-num-box" type="text" value="${window._CBT_ANS[qIdx] || ""}" onchange="window._CBT_ANS[${qIdx}]=this.value.trim();" placeholder="Type numerical answer..." class="w-56 rounded-xl border border-slate-300 px-4 py-2.5 text-base font-mono font-extrabold" /></div>
+            ` : `
+              <div class="grid grid-cols-1 gap-2.5 text-xs pt-1">
+                ${(q.options_json || []).map((opt, oi) => {
+                  const selected = String(window._CBT_ANS[qIdx]) === String(oi);
+                  return `<button type="button" onclick="window._CBT_ANS[${qIdx}]='${oi}'; window.renderScienceTab4();" class="text-left p-3.5 rounded-xl border transition cursor-pointer ${selected ? `bg-${accent}-600 text-white border-${accent}-600 font-bold shadow-sm` : "bg-slate-50 border-slate-200 text-slate-900"}"><strong>(${String.fromCharCode(65 + oi)})</strong> ${opt}</button>`;
+                }).join("")}
+              </div>
+            `}
+            ${window._CBT_SUBMITTED ? `<div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950"><strong>Official Answer:</strong> ${q.options_json ? q.options_json[Number(q.correct_answer)] : q.correct_answer}<br/><strong>Solution:</strong> ${q.explanation}</div>` : ""}
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-slate-100">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="const nb=document.getElementById('cbt-num-box'); if(nb) window._CBT_ANS[${qIdx}]=nb.value.trim(); if(window._CBT_IDX<${totalQs - 1}) window._CBT_IDX++; window.renderScienceTab4();" class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-extrabold cursor-pointer">Save &amp; Next</button>
+                <button type="button" onclick="const nb=document.getElementById('cbt-num-box'); if(nb) window._CBT_ANS[${qIdx}]=nb.value.trim(); window._CBT_REVIEW[${qIdx}]=true; if(window._CBT_IDX<${totalQs - 1}) window._CBT_IDX++; window.renderScienceTab4();" class="px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-extrabold cursor-pointer">Mark for Review &amp; Next</button>
+                <button type="button" onclick="delete window._CBT_ANS[${qIdx}]; delete window._CBT_REVIEW[${qIdx}]; window.renderScienceTab4();" class="px-3.5 py-2 rounded-xl border text-xs font-bold cursor-pointer">Clear Response</button>
+              </div>
+              <div class="flex gap-1.5">
+                <button type="button" onclick="if(window._CBT_IDX>0){window._CBT_IDX--; window.renderScienceTab4();}" class="px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer">&larr; Prev</button>
+                <button type="button" onclick="if(window._CBT_IDX<${totalQs - 1}){window._CBT_IDX++; window.renderScienceTab4();}" class="px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer">Next &rarr;</button>
+              </div>
+            </div>
+          </div>
+          <div class="lg:col-span-4 bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+            <div class="text-xs font-extrabold uppercase text-slate-700">QUESTION PALETTE (${totalQs} Qs)</div>
+            <div class="grid grid-cols-2 gap-2 text-[11px] font-bold">
+              <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-emerald-600 inline-block"></span> Answered (${Object.keys(window._CBT_ANS).filter(k => String(window._CBT_ANS[k]).trim() !== "").length})</div>
+              <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-purple-600 inline-block"></span> Marked (${Object.keys(window._CBT_REVIEW).length})</div>
+              <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-rose-500 inline-block"></span> Skipped</div>
+              <div class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-slate-200 inline-block"></span> Unvisited</div>
+            </div>
+            <div class="max-h-[340px] overflow-y-auto pr-1 grid grid-cols-6 gap-1.5">
+              ${paper.map((_, idx) => {
+                const hasAns = window._CBT_ANS[idx] !== undefined && String(window._CBT_ANS[idx]).trim() !== "";
+                const isRev = !!window._CBT_REVIEW[idx], isVis = !!window._CBT_VISITED[idx];
+                let cls = isRev ? "bg-purple-600 text-white border-purple-600" : hasAns ? "bg-emerald-600 text-white border-emerald-600" : isVis ? "bg-rose-500 text-white border-rose-500" : "bg-slate-100 text-slate-700 border-slate-300";
+                if (idx === qIdx) cls += " ring-2 ring-indigo-500 ring-offset-1";
+                return `<button type="button" onclick="window._CBT_IDX=${idx}; window.renderScienceTab4();" class="h-7 rounded-lg text-[11px] font-extrabold border cursor-pointer ${cls}">${idx + 1}</button>`;
+              }).join("")}
+            </div>
+          </div>
+        </div>
+        ${ledgerHtml}
+      </div>`;
+  };
+
+  // ============================================================================
+  // TAB 6: VERIFIED FULL-MOCK PRESENT-LEVEL FORECASTER & WHAT-IF SANDBOX (v29)
+  // ============================================================================
+  window._T6_MODE = window._T6_MODE || "VERIFIED";
+  window._T6_JEE = { p: 76, c: 74, m: 68, shift: "MODERATE", cat: "GEN" };
+  window._T6_NEET = { p: 155, c: 160, b: 175, z: 170, diff: "MODERATE", cat: "GEN" };
 
   window.applySyncedMockToTab6 = function (sessionId) {
     try {
@@ -707,13 +1025,6 @@
     } catch (_) {}
     return false;
   };
-
-
-  // ============================================================================
-  // TAB 6: VERIFIED FULL-MOCK PRESENT-LEVEL FORECASTER & WHAT-IF SANDBOX (v28)
-  // ============================================================================
-  window._T6_JEE = { p: 76, c: 74, m: 68, shift: "MODERATE", cat: "GEN" };
-  window._T6_NEET = { p: 155, c: 160, b: 175, z: 170, diff: "MODERATE", cat: "GEN" };
 
   window.updateScienceTab6 = function () {
     const out = document.getElementById("t6-live-results");
@@ -984,6 +1295,8 @@
     `;
     window.updateScienceTab6();
   };
+
+
 
 
   // Lock all 6 tab renderers so legacy scripts can never hijack them

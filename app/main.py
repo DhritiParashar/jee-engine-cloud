@@ -2170,7 +2170,7 @@ def get_science_questions(exam: str = "JEE", subject: str = "", limit: int = 200
         with eng.connect() as conn:
             rows = conn.execute(
                 _sa_text(sql),
-                {"exam_code": exam_code, "subj_code": subj_code, "lim": max(1, min(limit, 1000))}
+                {"exam_code": exam_code, "subj_code": subj_code, "lim": max(1, min(limit, 2500))}
             ).mappings().all()
         return {"ok": True, "exam": exam_code, "count": len(rows), "questions": [dict(r) for r in rows]}
     except Exception as e:

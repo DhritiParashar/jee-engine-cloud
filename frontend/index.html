@@ -54,6 +54,22 @@
   </header>
 
   <main id="tab-content" class="max-w-7xl mx-auto px-4 py-6"></main>
+  <script>
+window.IPM_MANIFEST = {
+  defaultMode: "JEE_MAIN",
+  examModes: [
+    {
+      id: "JEE_MAIN",
+      label: "JEE Main Standard (75 Qs)",
+      sub: "(300 Marks Scale)",
+      sections: "Physics (20 MCQ + 5 Num) • Chemistry (20 MCQ + 5 Num) • Mathematics (20 MCQ + 5 Num)",
+      pattern: "75 Compulsory Qs | 180 Mins | NTA CBT Interface",
+      marking: "Section A MCQ +4/-1 | Section B Numerical +4/-1"
+    }
+  ]
+};
+document.documentElement.classList.remove("dark");
+</script>
   <script src="/js/examSwitcher.js"></script>
   <script src="/js/app.js"></script>
 
@@ -360,6 +376,6 @@
   // Event-driven header rendering (zero polling CPU)
 })();
 </script>
-  <script src="/js/modules/jee_master_modules.js?v=20261119v4"></script>
+  <script src="/js/modules/jee_master_modules.js?v=20261119v5"></script>
 </body>
 </html>

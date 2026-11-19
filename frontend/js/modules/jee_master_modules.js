@@ -8,7 +8,7 @@
   const TABS = ['1. Physics, Chem & Math (12x12)', '2. Organic & Derivation Lab', '3. Section B Numerical Studio', '4. 75-Q NTA CBT Mock', '5. Trap Doctor & AI Doubts', '6. JEE Percentile & IIT/NIT Forecaster'];
 
   function enforceScienceBrand() {
-    document.title = "GOALisB JEE Master";
+    document.documentElement.classList.remove("dark"); document.body.classList.remove("dark"); document.title = "GOALisB JEE Master";
     document.querySelectorAll("div, span, h1, p").forEach(el => {
       const t = (el.textContent || "").trim();
       if (el.children.length === 0) {

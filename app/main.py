@@ -2010,10 +2010,7 @@ def api_get_pyq(exam: str = "ALL", year: str = "ALL"):
 def on_startup_seed_postgrad():
     # Startup seeding disabled — Neon shared science bank managed via offline seeder
     pass
-    except Exception as e:
-        print("Postgrad seed warning:", e)
 
-# --- POSTGRADUATE PYQ & CHAPTER-BOOK INGESTION / FILTER ENDPOINTS ---
 @app.get("/api/questions/catalog")
 async def api_questions_catalog(source_type: str = "", chapter: str = "", section: str = "", limit: int = 100):
     import json

@@ -99,6 +99,7 @@
     const target = getTarget(el);
     if (!target) return;
     await hydrateFromNeon();
+    if (window._ACTIVE_SCI_TAB && window._ACTIVE_SCI_TAB !== 1) return;
 
     const mods = window._SCI_MODULES.filter(x => !String(x.module_code || "").startsWith("JEE-T2-"));
     if (!mods.length) {
@@ -250,6 +251,7 @@
     const target = getTarget(el);
     if (!target) return;
     await hydrateFromNeon();
+    if (window._ACTIVE_SCI_TAB && window._ACTIVE_SCI_TAB !== 2) return;
 
     const mods = window._SCI_MODULES.filter(x => String(x.module_code || "").startsWith("JEE-T2-"));
     if (!mods.length) {
@@ -398,6 +400,7 @@
     const target = getTarget(el);
     if (!target) return;
     await hydrateFromNeon();
+    if (window._ACTIVE_SCI_TAB && window._ACTIVE_SCI_TAB !== 3) return;
 
     const allNums = window._SCI_QUESTIONS.filter(q => q.question_type === "NUMERICAL_INT");
     const filtered = allNums.filter(q =>
